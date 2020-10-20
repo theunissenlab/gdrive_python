@@ -30,18 +30,24 @@ def first_time_setup():
     
 
     print("""
-Instructions (basically follow the steps here: https://pythonhosted.org/PyDrive/quickstart.html#authentication)
+Instructions (sourced from: https://pythonhosted.org/PyDrive/quickstart.html#authentication)
+
 1. Go here https://console.developers.google.com/iam-admin/projects
-2. Search for ‘Google Drive API’, select the entry, and click ‘Enable’.
-3. Select ‘Credentials’ from the left menu, click ‘Create Credentials’, select ‘OAuth client ID’.
-4. Now, the product name and consent screen need to be set -> click ‘Configure consent screen’ and follow the instructions. Once finished:
+2. Search for ‘Google Drive API’, select the entry
+3. Create a project, select it in the top dropdown, and click ‘Enable’.
+4. Select ‘Credentials’ from the left menu. Select configure OAuth Consent Screen.
+5. Set it to Internal and fill in Application name (e.g. PyDrive Access)
+6. Select `Credentials` again from the left menu. Click ‘+Create Credentials’, select ‘OAuth client ID’.
+
 Select ‘Application type’ to be Web application.
-Enter an appropriate name.
+Enter an appropriate name (e.g. PyDrive)
 Input http://localhost:8080 for ‘Authorized JavaScript origins’.
 Input http://localhost:8080/ for ‘Authorized redirect URIs’.
 Click ‘Save’.
 Click ‘Download JSON’ on the right side of Client ID to download client_secret_<really long ID>.json.
+
 The downloaded file has all authentication information of your application. Rename the file to “client_secrets.json” and place it in your working directory.
+
     """)
 
     while not os.path.exists("client_secrets.json"):

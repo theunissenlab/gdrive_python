@@ -53,10 +53,27 @@ class GDriveCommands(object):
     def __init__(self):
         self.drive = GoogleDrive(self._get_auth())
         
-    def get_root(self, folder_name):
-        return self.drive.ListFile({
-            "q": "title = '{}'".format(folder_name)
-        }).GetList()[0]
+    def get_root(self, folder_name, shared=False):
+        """Get the root directory to start queries from
+
+        Params
+        ======
+        folder_name: Name of folder to search for
+        shared (default=False): If true, only searches for folders in "Shared with Me"
+        """
+        if shared is False:
+            result_list = self.drive.ListFile({
+                "q": "title = '{}'".format(folder_name)
+            }).GetList()
+            if len(result_list) > 1:
+                print("Warning: Located {} files by name {}. Selecting the first one".format(
+                    len(result_list), folder_name
+                ))
+            return result_list[0]
+        else:
+            return self.drive.ListFile({
+                "q": "title = '{}' and sharedWithMe".format(folder_name)
+            }).GetList()[0]
     
     def _get_auth(self):
         gauth = GoogleAuth()

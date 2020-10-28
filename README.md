@@ -41,3 +41,9 @@ Upload Files/Create Folders
 g.create_folder(GDRIVE_DIRECTORY, folder_name)
 g.upload_file(local_file_path, GDRIVE_DIRECTORY)
 ```
+
+## TODO
+
+Have a way to resolve when multiple files have the same name
+
+Make the forced choice of root dir smoother?

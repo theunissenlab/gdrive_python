@@ -1,44 +1,54 @@
-# Google Drive Access via Python
-Instructions to get started on accessing Google Drive via Python functions
+# Google Drive Access via Python (gdrive-access)
 
-## Files
+Instructions to get started on accessing Google Drive via Python functions.
 
-`setup_gdrive.py` is a script for initial setup to acquire credential files from Google Drive
+## Install
 
-`access.py` contains the Python object used for communicating with Google Drive's API
+* `git clone`
 
-## Setup
+* `cd gdrive_python`
 
-* Install PyDrive (`pip install -r requirements.txt`)
+* (from in your favorite virtual environment) `pip install .`
 
-* Run `python setup_gdrive.py`. Follow the instructions that involve creating a Google Cloud project and creating client credentials, and downloading a `client_secrets.json` file)
+#### First time setup
 
+Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory).
+
+* `python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR`
+
+### Uninstall
+
+* `pip uninstall gdrive-access`
 
 ## Usage
+
+#### Initialize the object and authenticate
 ```
-# Initialize the object and authenticate
 g = GDriveCommands()
+```
 
-# Set the root google drive directory (should be a folder name in the top
-# level of your google drive)
-root = g.get_root(ROOTDIR)
+#### Set the root google drive directory (should be a folder name in the top level of your google drive)
+```
+root = g.get_root(ROOTDIR) -> GDRIVE_DIRECTORY
+```
 
-Access Files
-============
-g.search(GDRIVE_DIRECTORY, filename) -> GDRIVE_FILE
-g.locate(root, *path_elements) -> GDRIVE_FILE
-g.ls(GDRIVE_DIRECTORY) -> GDRIVE_FILELIST
-g.exists(root, *path_elements) -> bool
+#### Access Files
+```
+g.find(GDRIVE_DIRECTORY, *path_elements) -> GDRIVE_FILE/GDRIVE_DIRECTORY
+g.ls(GDRIVE_DIRECTORY, *path_elements) -> list of GDRIVE_FILEs
+g.exists(GDRIVE_DIRECTORY, *path_elements) -> bool
+```
 
-Download Files
-==============
+#### Download Files
+```
 g.download_file(GDRIVE_FILE, local_path, overwrite=False)
 g.download_files([GDRIVE_FILE1, GDRIVE_FILE2, ...], local_folder_path, overwrite=False) 
 g.download_folder(GDRIVE_DIRECTORY, local_folder_path) 
+```
 
-Upload Files/Create Folders
-===========================
-g.create_folder(GDRIVE_DIRECTORY, folder_name)
+#### Upload Files/Create Folders
+```
+g.create_folder(GDRIVE_DIRECTORY, folder_name) -> GDRIVE_DIRECTORY
 g.upload_file(local_file_path, GDRIVE_DIRECTORY)
 ```
 

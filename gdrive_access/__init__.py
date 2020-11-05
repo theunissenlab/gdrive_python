@@ -17,7 +17,7 @@ import time
 import json
 import yaml
 
-from pydrive.auth import GoogleAuth
+from pydrive.auth import GoogleAuth, InvalidConfigError
 from pydrive.drive import GoogleDrive
 
 from .display import *
@@ -37,6 +37,10 @@ class MultipleFilesError(Exception):
     """More than one file matching the name given"""
 
 
+class CredentialsNotFound(Exception):
+    """Credential files not found"""
+
+
 class GDriveCommands(object):
     """
     Access google drive with methods
@@ -48,13 +52,13 @@ class GDriveCommands(object):
 
     # Set the root google drive directory (should be a folder name in the top
     # level of your google drive)
-    root = g.get_root(ROOTDIR)
+    root = g.get_root(ROOTDIR) -> GDRIVE_DIRECTORY
 
     Access Files
     ============
-    g.find(GDRIVE_DIRECTORY, *path_elements) -> GDRIVE_FILE
-    g.ls(GDRIVE_DIRECTORY) -> GDRIVE_FILELIST
-    g.exists(root, *path_elements) -> bool
+    g.find(GDRIVE_DIRECTORY, *path_elements) -> GDRIVE_FILE/GDRIVE_DIRECTORY
+    g.ls(GDRIVE_DIRECTORY, *path_elements) -> list of GDRIVE_FILEs
+    g.exists(GDRIVE_DIRECTORY, *path_elements) -> bool
 
     Download Files
     ==============
@@ -98,7 +102,16 @@ class GDriveCommands(object):
         return result_list[0]
     
     def _get_auth(self, settings_file="settings.yaml"):
-        return get_auth(settings_file)
+        if not os.path.exists(settings_file):
+            raise CredentialsNotFound("Settings file {} was not found.\n"
+                    "Please fix the path to the settings.yaml file or set up credentials with\n"
+                    "'python -m gdrive_access.setup_credentials --dir CREDENTIALDIR'".format(settings_file))
+        try:
+            return get_auth(settings_file)
+        except FileNotFoundError:
+            raise CredentialsNotFound("Credentials were not found; Perhaps you should try running\n"
+                    "'python -m gdrive_access.setup_credentials --dir CREDENTIALDIR'\n"
+                    "or fixing the location of the credentials location set in {}".format(settings_file))
 
     def _find_one_level(self, dir, filename):
         """Look for a filename in google drive directory
@@ -139,10 +152,15 @@ class GDriveCommands(object):
             result = self._find_one_level(result, dirname)
         return result
     
-    def ls(self, dir):
+    def ls(self, root, *dirnames):
+        if not len(dirnames):
+            id_ = root["id"]
+        else:
+            id_ = self.find(root, *dirnames)["id"]
+
         time.sleep(0.01)
         return PyDriveListWrapper(self.drive.ListFile({
-            "q": "'{}' in parents and trashed = false".format(dir["id"])
+            "q": "'{}' in parents and trashed = false".format(_id)
         }).GetList())
     
     def exists(self, root, *dirnames):

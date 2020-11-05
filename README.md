@@ -33,7 +33,7 @@ g.exists(GDRIVE_DIRECTORY, *path_elements)  # -> bool
 ```python
 g.download_file(GDRIVE_FILE, local_path, overwrite=False)
 g.download_files([GDRIVE_FILE1, GDRIVE_FILE2, ...], local_folder_path, overwrite=False) 
-g.download_folder(GDRIVE_DIRECTORY, local_folder_path) 
+g.download_folder(GDRIVE_DIRECTORY, local_folder_path, overwrite=False) 
 ```
 
 #### Upload Files/Create Folders

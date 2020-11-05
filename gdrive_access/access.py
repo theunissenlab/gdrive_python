@@ -8,9 +8,12 @@ from .display import *
 from .errors import CredentialsNotFound, MultipleFilesError, NotFoundError
 
 
-def get_auth(settings_file="settings.yaml"):
+def get_auth(settings_file="settings.yaml", webauth=False):
     gauth = GoogleAuth(settings_file=settings_file)
-    gauth.LocalWebserverAuth()
+    if webauth:
+        gauth.LocalWebserverAuth()
+    else:
+        gauth.CommandLineAuth()
     return gauth
 
 

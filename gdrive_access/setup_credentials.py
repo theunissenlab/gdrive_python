@@ -42,12 +42,22 @@ Instructions (based on: https://pythonhosted.org/PyDrive/quickstart.html#authent
     5. Set it to Internal and fill in Application name (e.g. PyDrive Access)
 
     6. Select `Credentials` again from the left menu. Click "+Create Credentials", select "OAuth client ID".
+
+      You can choose now to log in with a web browser (log in with Google) or in the command line.
+
+      For web browser login:
         Select "Application type" to be Web application.
-        Enter an appropriate name (e.g. PyDrive)
+        Enter an appropriate name (e.g. gdrive-access)
         Input http://localhost:8080 for "Authorized JavaScript origins".
         Input http://localhost:8080/ for "Authorized redirect URIs".
-        Click "Save".
-        Click "Download JSON" on the right side of Client ID to download client_secret_<really long ID>.json.
+      For command line login:
+        Select "Application type" to be Desktop.
+        Enter an appropriate name (e.g. gdrive-access)
+
+    7. Click "Save".
+
+    8. Click "Download JSON" on the right side of Client ID to download client_secret_<really long ID>.json.
+
 
     The downloaded file has all authentication information of your application. Rename the file to "client_secrets.json" and place it in {}.
     """.format("your working directory" if credential_location == "." else credential_location))
@@ -59,9 +69,16 @@ Instructions (based on: https://pythonhosted.org/PyDrive/quickstart.html#authent
     with open(client_secrets_path, "r") as json_file:  
         data = json.load(json_file)
 
-    settings_dict["client_config"]["client_id"] = data["web"]["client_id"]
-    settings_dict["client_config"]["client_secret"] = data["web"]["client_secret"]
-    # May need to set redirect uris?
+    if "web" in data:
+        settings_dict["client_config"]["client_id"] = data["web"]["client_id"]
+        settings_dict["client_config"]["client_secret"] = data["web"]["client_secret"]
+    elif "installed" in data:
+        settings_dict["client_config"]["client_id"] = data["installed"]["client_id"]
+        settings_dict["client_config"]["client_secret"] = data["installed"]["client_secret"]
+    else:
+        raise Exception("Unexpected key found in client_secrets.json. Expected web or installed, but"
+                " got {}. Maybe you didn't choose Application Type 'Web Application' or "
+                "'Desktop'?".format(list(data.keys())))
 
     with open(settings_path, "w") as settings_file:
         yaml.dump(settings_dict, settings_file, default_flow_style=False)
@@ -78,6 +95,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     first_time_setup(credential_location=args.dir)
-    auth = get_auth(os.path.join(args.dir, "settings.yaml"))
+
+    settings_path = os.path.join(args.dir, "settings.yaml")
+
+    with open(settings_path, "r") as settings_file:
+        settings_dict = yaml.safe_load(settings_file)
+
+    auth = get_auth(settings_path, webauth="web" in settings_dict)
 
     print("\nCongrats you are authenticated!\n")

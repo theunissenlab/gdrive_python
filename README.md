@@ -11,8 +11,10 @@ from gdrive_access import GDriveCommands
 ```
 
 #### Initialize the object and authenticate
+
+Alternatively, specify the [custom path to CREDENTIALS_DIR/settings.yaml](#one-time-credentials-setup) if you did not use the default during setup.
 ```python
-g = GDriveCommands()
+g = GDriveCommands("settings.yaml")
 ```
 
 #### Set the root google drive directory (should be a folder name in the top level of your google drive)
@@ -51,9 +53,9 @@ cd gdrive_python
 pip install .
 ```
 
-#### First time setup
+### One time credential setup
 
-Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory).
+Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory). It will create files `settings.yaml` and `credentials.json` in that directory. You will create a file in it called `client_secrets.json` during the setup process.
 
 ```bash
 python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR

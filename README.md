@@ -1,8 +1,23 @@
 # Google Drive Access via Python (gdrive-access)
 
-gdrive-access is a simplified set of Python functions for navigating Google Drive folders and uploading/downloading files. To get set up, you will need to install gdrive-access and run the `gdrive_access.setup_credentials` script to give it permission to access your Google Drive through the Google Drive web API.
+gdrive-access is a simplified set of Python functions for navigating Google Drive folders and uploading/downloading files. To get set up, you will need to install gdrive-access and run the "setup credentials" script (`python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR`) to give it permission to access your Google Drive through the Google Drive web API.
 
-## Usage
+## 1 Install
+
+gdrive-access should work on any version of Python 3 but has only been tested on Python 3.9. It is recommended to install it in a virtual environment.
+```bash
+pip install git+https://github.com/theunissenlab/gdrive_python.git@main
+```
+
+### First time credentials setup
+
+Run the following script and follow the instructions carefully. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory). It will create files `settings.yaml` and `credentials.json` in that directory. You will also create a file in it called `client_secrets.json` during the setup process.
+
+```bash
+python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR
+```
+
+## 2 Usage
 
 #### Import the GDriveCommands class
 
@@ -12,7 +27,7 @@ from gdrive_access import GDriveCommands
 
 #### Initialize the object and authenticate
 
-Alternatively, specify the [custom path to CREDENTIALS_DIR/settings.yaml](#one-time-credentials-setup) if you did not use the default during setup.
+Alternatively, specify the custom path to [`CREDENTIALS_DIR/settings.yaml`](https://github.com/theunissenlab/gdrive_python#first-time-credentials-setup) if you did not use the default during setup.
 ```python
 g = GDriveCommands("settings.yaml")
 ```
@@ -42,37 +57,11 @@ g.create_folder(GDRIVE_DIRECTORY, folder_name)  # -> GDRIVE_DIRECTORY
 g.upload_file(local_file_path, GDRIVE_DIRECTORY)
 ```
 
-## Install
-
-gdrive-access should work on any version of Python 3 but has only been tested on Python3.9.
-```bash
-pip install git+https://github.com/theunissenlab/gdrive_python.git@main
-```
-
-or
-
-```bash
-# Optional: activate your virtual environment first
-git clone https://github.com/theunissenlab/gdrive_python.git
-cd gdrive_python
-pip install .
-```
-
-### One time credentials setup
-
-Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory). It will create files `settings.yaml` and `credentials.json` in that directory. You will create a file in it called `client_secrets.json` during the setup process.
-
-```bash
-python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR
-```
-
-## Uninstall
-```
+## 3 Uninstall
+```shell
 pip uninstall gdrive-access
 ```
 
-## TODO
+## 4 TODO
 
-Have a way to resolve when multiple files have the same name
-
-Make the forced choice of root dir smoother?
+* Have a way to resolve when multiple files have the same name?

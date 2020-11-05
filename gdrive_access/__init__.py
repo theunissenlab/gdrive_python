@@ -160,7 +160,7 @@ class GDriveCommands(object):
 
         time.sleep(0.01)
         return PyDriveListWrapper(self.drive.ListFile({
-            "q": "'{}' in parents and trashed = false".format(_id)
+            "q": "'{}' in parents and trashed = false".format(id_)
         }).GetList())
     
     def exists(self, root, *dirnames):

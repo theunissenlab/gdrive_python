@@ -1,3 +1,15 @@
+"""
+gdrive_access
+
+Wrapper around common google drive (pydrive) api calls
+for uploading and downloading
+"""
+
+__version__ = "0.0.1"
+__author__ = "Kevin Yu"
+__credits__ = "Theunissen Lab, UC Berkeley"
+
+
 import datetime
 import glob
 import os
@@ -8,15 +20,21 @@ import yaml
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
+from .display import *
 
-def get_auth():
-    gauth = GoogleAuth()
+
+def get_auth(settings_file="settings.yaml"):
+    gauth = GoogleAuth(settings_file=settings_file)
     gauth.LocalWebserverAuth()
     return gauth
 
 
 class NotFoundError(Exception):
     """Item not Found"""
+
+
+class MultipleFilesError(Exception):
+    """More than one file matching the name given"""
 
 
 class GDriveCommands(object):
@@ -34,8 +52,7 @@ class GDriveCommands(object):
 
     Access Files
     ============
-    g.search(GDRIVE_DIRECTORY, filename) -> GDRIVE_FILE
-    g.locate(root, *path_elements) -> GDRIVE_FILE
+    g.find(GDRIVE_DIRECTORY, *path_elements) -> GDRIVE_FILE
     g.ls(GDRIVE_DIRECTORY) -> GDRIVE_FILELIST
     g.exists(root, *path_elements) -> bool
 
@@ -50,8 +67,8 @@ class GDriveCommands(object):
     g.create_folder(GDRIVE_DIRECTORY, folder_name)
     g.upload_file(local_file_path, GDRIVE_DIRECTORY)
     """
-    def __init__(self):
-        self.drive = GoogleDrive(self._get_auth())
+    def __init__(self, settings_file="settings.yaml"):
+        self.drive = GoogleDrive(self._get_auth(settings_file))
         
     def get_root(self, folder_name, shared=False):
         """Get the root directory to start queries from
@@ -60,66 +77,77 @@ class GDriveCommands(object):
         ======
         folder_name: Name of folder to search for
         shared (default=False): If true, only searches for folders in "Shared with Me"
+
+        Returns:
+            pydrive.GoogleDriveFile object of the root location
         """
         if shared is False:
-            result_list = self.drive.ListFile({
+            result_list = PyDriveListWrapper(self.drive.ListFile({
                 "q": "title = '{}'".format(folder_name)
-            }).GetList()
-            if len(result_list) > 1:
-                print("Warning: Located {} files by name {}. Selecting the first one".format(
-                    len(result_list), folder_name
-                ))
-            return result_list[0]
+            }).GetList())
         else:
-            return self.drive.ListFile({
+            result_list = PyDriveListWrapper(self.drive.ListFile({
                 "q": "title = '{}' and sharedWithMe".format(folder_name)
-            }).GetList()[0]
-    
-    def _get_auth(self):
-        gauth = GoogleAuth()
-        gauth.LocalWebserverAuth()
-        return gauth
+            }).GetList())
 
-    def search(self, dir, filename):
+        if len(result_list) > 1:
+            print("Warning: Located {} files by name {}. Selecting the first one".format(
+                len(result_list), folder_name
+            ))
+
+        return result_list[0]
+    
+    def _get_auth(self, settings_file="settings.yaml"):
+        return get_auth(settings_file)
+
+    def _find_one_level(self, dir, filename):
         """Look for a filename in google drive directory
 
         Params
-        dir: a str name of the Google Drive directory to search in
-        filename: the str name of the file or directory to search for
+        dir: a str name of the Google Drive directory to find in
+        filename: the str name of the file or directory to look for
 
         Returns:
-            PyDrive object representing the file being searched for
+            pydrive.GoogleDriveFile object representing the file being searched for
         """
         time.sleep(0.01)
-        file_list = self.drive.ListFile({
+        file_list = PyDriveListWrapper(self.drive.ListFile({
             "q": "title = '{}' and '{}' in parents and "
                  "trashed = false".format(filename, dir["id"])
-        }).GetList()
+        }).GetList())
+
         if not len(file_list):
             raise NotFoundError("{}/{} not found".format(dir["title"], filename))
+
+        if len(file_list) > 1:
+            raise MultipleFilesError
+
         return file_list[0]
     
-    def locate(self, root, *dirnames):
+    def find(self, root, *dirnames):
         """Look for a specific path in google drive directory
         
         Params
         root: the root directory to start looking from
         *dirnames: each individual path element
+
+        Returns:
+            pydrive.GoogleDriveFile object representing the file being searched for
         """
         result = root
         for dirname in dirnames:
-            result = self.search(result, dirname)
+            result = self._find_one_level(result, dirname)
         return result
     
     def ls(self, dir):
         time.sleep(0.01)
-        return self.drive.ListFile({
+        return PyDriveListWrapper(self.drive.ListFile({
             "q": "'{}' in parents and trashed = false".format(dir["id"])
-        }).GetList()
+        }).GetList())
     
     def exists(self, root, *dirnames):
         try:
-            self.locate(root, *dirnames)
+            self.find(root, *dirnames)
         except NotFoundError:
             return False
         else:
@@ -222,6 +250,10 @@ class GDriveCommands(object):
             if f["mimeType"] == "application/vnd.google-apps.folder":
                 self.download_folder(f, os.path.join(download_to_path, f["title"]))
             else:
-#                 print("Downloading {}".format(f["title"]))
                 self.download_file(f, os.path.join(download_to_path, f["title"]))
 
+
+__all__ = [
+    "get_auth",
+    "GDriveCommands"
+]

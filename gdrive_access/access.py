@@ -5,24 +5,13 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
 from .display import *
+from .errors import CredentialsNotFound, MultipleFilesError, NotFoundError
 
 
 def get_auth(settings_file="settings.yaml"):
     gauth = GoogleAuth(settings_file=settings_file)
     gauth.LocalWebserverAuth()
     return gauth
-
-
-class NotFoundError(Exception):
-    """Item not Found"""
-
-
-class MultipleFilesError(Exception):
-    """More than one file matching the name given"""
-
-
-class CredentialsNotFound(Exception):
-    """Credential files not found"""
 
 
 class GDriveCommands(object):

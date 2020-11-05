@@ -4,11 +4,12 @@ Instructions to get started on accessing Google Drive via Python functions.
 
 ## Install
 
-* `git clone`
-
-* `cd gdrive_python`
-
-* (from in your favorite virtual environment) `pip install .`
+```
+# Optional: activate your virtual environment first
+git clone https://github.com/theunissenlab/gdrive_python.git
+cd gdrive_python
+pip install .
+```
 
 #### First time setup
 
@@ -16,9 +17,10 @@ Run the following script and follow the instructions. Optionally, specify a CRED
 
 * `python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR`
 
-### Uninstall
-
-* `pip uninstall gdrive-access`
+## Uninstall
+```
+pip uninstall gdrive-access
+```
 
 ## Usage
 

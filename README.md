@@ -53,7 +53,7 @@ cd gdrive_python
 pip install .
 ```
 
-### One time credential setup
+### One time credentials setup
 
 Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory). It will create files `settings.yaml` and `credentials.json` in that directory. You will create a file in it called `client_secrets.json` during the setup process.
 

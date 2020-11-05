@@ -1,12 +1,7 @@
-import datetime
-import glob
 import os
-import time
 import json
 import yaml
 from pathlib import Path
-
-# from .access import get_auth
 
 
 def first_time_setup(credential_location="."):
@@ -76,8 +71,7 @@ Instructions (based on: https://pythonhosted.org/PyDrive/quickstart.html#authent
 
 if __name__ == "__main__":
     import argparse
-
-    from . import get_auth
+    from .access import get_auth
 
     parser = argparse.ArgumentParser(description="Setup Google Drive API credentials")
     parser.add_argument("--dir", type=str, default=".", help="Directory to store credentials")

@@ -95,9 +95,12 @@ class GDriveCommands(object):
             }).GetList())
 
         if len(result_list) > 1:
+            print(result_list)
             print("Warning: Located {} files by name {}. Selecting the first one".format(
                 len(result_list), folder_name
             ))
+        elif len(result_list) == 0:
+            raise NotFoundError("{}older {}".format("Shared f" if shared else "F", folder_name))
 
         return result_list[0]
     

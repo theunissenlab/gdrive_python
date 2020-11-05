@@ -45,6 +45,11 @@ g.upload_file(local_file_path, GDRIVE_DIRECTORY)
 ## Install
 
 gdrive-access should work on any version of Python 3 but has only been tested on Python3.9.
+```bash
+pip install git+https://github.com/theunissenlab/gdrive_python.git@main
+```
+
+or
 
 ```bash
 # Optional: activate your virtual environment first

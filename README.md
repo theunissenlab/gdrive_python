@@ -1,6 +1,6 @@
 # Google Drive Access via Python (gdrive-access)
 
-gdrive-access is a simplified set of Python functions for navigating Google Drive folders and uploading/downloading files. To get set up, you will need to install gdrive-access and run the "setup credentials" script (`python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR`) to give it permission to access your Google Drive through the Google Drive web API.
+gdrive-access is a simplified set of Python functions for navigating Google Drive folders and uploading/downloading files, built on PyDrive. To get set up, you will need to install gdrive-access and run the "setup credentials" script (`python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR`) to give it permission to access your Google Drive through the Google Drive web API.
 
 ## 1 Install
 

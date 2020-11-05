@@ -1,28 +1,6 @@
 # Google Drive Access via Python (gdrive-access)
 
-Instructions to get started on accessing Google Drive via Python functions.
-
-## Install
-
-```bash
-# Optional: activate your virtual environment first
-git clone https://github.com/theunissenlab/gdrive_python.git
-cd gdrive_python
-pip install .
-```
-
-#### First time setup
-
-Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory).
-
-```bash
-python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR
-```
-
-## Uninstall
-```
-pip uninstall gdrive-access
-```
+gdrive-access is a simplified set of Python functions for navigating Google Drive folders and uploading/downloading files. To get set up, you will need to install gdrive-access and run the `gdrive_access.setup_credentials` script to give it permission to access your Google Drive through the Google Drive web API.
 
 ## Usage
 
@@ -60,6 +38,30 @@ g.download_folder(GDRIVE_DIRECTORY, local_folder_path)
 ```python
 g.create_folder(GDRIVE_DIRECTORY, folder_name)  # -> GDRIVE_DIRECTORY
 g.upload_file(local_file_path, GDRIVE_DIRECTORY)
+```
+
+## Install
+
+gdrive-access should work on any version of Python 3 but has only been tested on Python3.9.
+
+```bash
+# Optional: activate your virtual environment first
+git clone https://github.com/theunissenlab/gdrive_python.git
+cd gdrive_python
+pip install .
+```
+
+#### First time setup
+
+Run the following script and follow the instructions. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory).
+
+```bash
+python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR
+```
+
+## Uninstall
+```
+pip uninstall gdrive-access
 ```
 
 ## TODO

@@ -2,7 +2,7 @@
 Wrappers for displaying pydrive results nicely
 """
 
-from pydrive.files import GoogleDriveFile
+from pydrive2.files import GoogleDriveFile
 
 
 def _file_to_string(self):

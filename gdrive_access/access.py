@@ -1,8 +1,9 @@
+import glob
 import os
 import time
 
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 
 from .display import *
 from .errors import CredentialsNotFound, MultipleFilesError, NotFoundError
@@ -92,6 +93,15 @@ class GDriveCommands(object):
                     "'python -m gdrive_access.setup_credentials --dir CREDENTIALDIR'\n"
                     "or fixing the location of the credentials location set in {}".format(settings_file))
 
+    def _to_id(self, file_):
+        """Return the id of the object unless it is a shortcut, then find the true id.
+        """
+        if file_["mimeType"] == "application/vnd.google-apps.shortcut":
+            file_.FetchMetadata(fields="shortcutDetails")
+            return file_["shortcutDetails"]["targetId"]
+        else:
+            return file_["id"]
+
     def _find_one_level(self, dir, filename):
         """Look for a filename in google drive directory
 
@@ -105,7 +115,7 @@ class GDriveCommands(object):
         time.sleep(0.01)
         file_list = PyDriveListWrapper(self.drive.ListFile({
             "q": "title = '{}' and '{}' in parents and "
-                 "trashed = false".format(filename, dir["id"])
+                 "trashed = false".format(filename, self._to_id(dir))
         }).GetList())
 
         if not len(file_list):
@@ -133,9 +143,9 @@ class GDriveCommands(object):
 
     def ls(self, root, *dirnames):
         if not len(dirnames):
-            id_ = root["id"]
+            id_ = self._to_id(root)
         else:
-            id_ = self.find(root, *dirnames)["id"]
+            id_ = self._to_id(self.find(root, *dirnames))
 
         time.sleep(0.01)
         return PyDriveListWrapper(self.drive.ListFile({
@@ -185,7 +195,7 @@ class GDriveCommands(object):
 
         new_folder = self.drive.CreateFile({
             "title": folder_name,
-            "parents":  [{"id": create_in["id"]}],
+            "parents":  [{"id": self._to_id(create_in)}],
             "mimeType": "application/vnd.google-apps.folder"
         })
         time.sleep(0.01)
@@ -210,7 +220,7 @@ class GDriveCommands(object):
                 raise Exception("File already exists, can't overwrite with overwrite=False")
 
         new_file = self.drive.CreateFile({
-            "parents": [{"id": upload_to["id"]}],
+            "parents": [{"id": self._to_id(upload_to)}],
             "title": uploaded_name or filename,
         })
         new_file.SetContentFile(local_file_path)

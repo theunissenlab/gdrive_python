@@ -18,7 +18,7 @@ def first_time_setup(credential_location="."):
             },
             "save_credentials": True,
             "save_credentials_backend": "file",
-            "save_credentials_file": os.path.abspath(credential_location),
+            "save_credentials_file": credentials_json_path,
             "get_refresh_token": True
         }
         with open(settings_path, "w") as settings_file:

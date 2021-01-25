@@ -7,7 +7,7 @@ gdrive-access is a simplified set of Python functions for navigating Google Driv
 gdrive-access should work on any version of Python 3 but has only been tested on Python 3.9. It is recommended to install it in a virtual environment.
 
 ```bash
-pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.0.2
+pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.0.3
 ```
 
 ### First time credentials setup

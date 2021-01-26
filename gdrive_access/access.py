@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import enum
+import hashlib
 import glob
 import os
 import time
@@ -16,6 +20,11 @@ def get_auth(settings_file="settings.yaml", webauth=False):
     else:
         gauth.CommandLineAuth()
     return gauth
+
+
+def _md5(file_):
+    with open(file_, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
 
 
 class GDriveCommands(object):
@@ -39,15 +48,28 @@ class GDriveCommands(object):
 
     Download Files
     ==============
-    g.download_file(GDRIVE_FILE, local_path, overwrite=False)
-    g.download_files([GDRIVE_FILE1, GDRIVE_FILE2, ...], local_folder_path, overwrite=False)
+    g.download_file(GDRIVE_FILE, local_path, overwrite=g.Overwrite.NEVER)
+    g.download_files([GDRIVE_FILE1, GDRIVE_FILE2, ...], local_folder_path, overwrite=g.Overwrite.NEVER)
     g.download_folder(GDRIVE_DIRECTORY, local_folder_path)
+
+    Overwrite Modes
+    ===============
+    g.Overwrite.NEVER
+    g.Overwrite.ALWAYS
+    g.Overwrite.ON_FILESIZE_CHANGE
+    g.Overwrite.ON_MD5_CHECKSUM_CHANGE
 
     Upload Files/Create Folders
     ===========================
     g.create_folder(GDRIVE_DIRECTORY, folder_name)
     g.upload_file(local_file_path, GDRIVE_DIRECTORY)
     """
+    class Overwrite(enum.Enum):
+        NEVER = 0
+        ALWAYS = 1
+        ON_FILESIZE_CHANGE = 2
+        ON_MD5_CHECKSUM_CHANGE = 3
+
     def __init__(self, settings_file="settings.yaml"):
         self.drive = GoogleDrive(self._get_auth(settings_file))
 
@@ -101,6 +123,20 @@ class GDriveCommands(object):
             return file_["shortcutDetails"]["targetId"]
         else:
             return file_["id"]
+
+    def _check_if_overwrite_okay(self, overwrite: Overwrite, gdrive_file, download_to_path):
+        if overwrite is self.Overwrite.NEVER:
+            return False
+        elif overwrite is self.Overwrite.ALWAYS:
+            return True
+        elif overwrite is self.Overwrite.ON_FILESIZE_CHANGE:
+            local_filesize = os.path.getsize(download_to_path)
+            gdrive_filesize = gdrive_file.metadata["fileSize"]
+            return local_filesize != gdrive_filesize
+        elif overwrite is self.Overwrite.ON_MD5_CHECKSUM_CHANGE:
+            local_checksum = _md5(download_to_path)
+            gdrive_checksum = gdrive_file.metadata["md5Checksum"]
+            return local_checksum != gdrive_checksum
 
     def _find_one_level(self, dir, filename):
         """Look for a filename in google drive directory
@@ -160,20 +196,22 @@ class GDriveCommands(object):
         else:
             return True
 
-    def download_file(self, gdrive_file, download_to_path, overwrite=False):
+    def download_file(self, gdrive_file, download_to_path, overwrite: Overwrite=Overwrite.NEVER):
         """Download a file from google drive
 
         Params
         gdrive_file (pydrive file): file to download
         download_to_path (str): location on local filesystem to download data
+        overwrite (GDriveCommands.Overwrite, default=NEVER): Overwrite mode
         """
         if gdrive_file["mimeType"] == "application/vnd.google-apps.folder":
             return self.download_folder(gdrive_file, download_to_path, overwrite=overwrite)
 
         if os.path.isdir(download_to_path):
             download_to_path = os.path.join(download_to_path, gdrive_file["title"])
-        if os.path.exists(download_to_path) and not overwrite:
+        if os.path.exists(download_to_path) and not self._check_if_overwrite_okay(overwrite, gdrive_file, download_to_path):
             return
+
         time.sleep(0.01)
         gdrive_file.GetContentFile(download_to_path)
 
@@ -202,7 +240,7 @@ class GDriveCommands(object):
         new_folder.Upload()
         return new_folder
 
-    def upload_file(self, local_file_path, upload_to, uploaded_name=None, overwrite=False):
+    def upload_file(self, local_file_path, upload_to, uploaded_name=None, overwrite: Overwrite=Overwrite.ON_MD5_CHECKSUM_CHANGE):
         """Uploads a file to a gdrive folder
 
         Params
@@ -210,14 +248,16 @@ class GDriveCommands(object):
         upload_to (pydrive object): pydrive folder object (e.g. the output of create_folder() or find())
         uploaded_name (string, optional): name to call the uploaded file in google drive. Uses the files actual
             name if left as None. Note that google drive allows for multiple files with the same name!
-        overwrite (bool, default False): set to True to upload it no matter what. If false, won't upload if
-            a file by the same name already exists on google drive. (Note that google drive allows for multiple
-            files of the same name, so it wont actually overwrite even if set to True)
+        overwrite (GDriveCommands.Overwrite, default=ON_MD5_CHECKSUM_CHANGE): set to True to upload it no matter what.
+            If false, won't upload if a file by the same name already exists on google drive.
+            (Note that google drive allows for multiple files of the same name, so it wont actually overwrite
+            even if it is set)
         """
         filename = os.path.basename(local_file_path)
-        if not overwrite:
-            if self.exists(upload_to, filename):
-                raise Exception("File already exists, can't overwrite with overwrite=False")
+        if self.exists(upload_to, filename):
+            existing_file = self.find(upload_to, filename)
+            if not self._check_if_overwrite_okay(overwrite, existing_file, local_file_path):
+                raise Exception("File already exists on google drive, can't overwrite with overwrite={}".format(overwrite))
 
         new_file = self.drive.CreateFile({
             "parents": [{"id": self._to_id(upload_to)}],
@@ -227,13 +267,35 @@ class GDriveCommands(object):
         time.sleep(0.01)
         new_file.Upload()
 
-    def download_files(self, gdrive_files, download_to_path, overwrite=False):
+    def upload_folder(self, local_folder_path, upload_to, uploaded_name=None, overwrite: Overwrite=Overwrite.ON_MD5_CHECKSUM_CHANGE, overwrite_soft=False):
+        """Upload a local folder and its contents to google drive
+
+        Attempts to preserve folder structure. If overwrite_soft is True, will only upload files that
+        do not already exist. If overwrite is False, will only upload files in the top level
+        does not exist.
+        """
+        # NOT IMPLEMENTED YET BECAUSE WE NEED TO HAVE A FILTER FOR WHAT FILETYPES TO UPLOAD
+        # AND AVOID HIDDEN FILES?
+        raise NotImplementedError
+
+        filename = os.path.basename(local_folder_path)
+
+        if not overwrite and not overwrite_soft:
+            if self.exists(upload_to, filename):
+                raise Exception("Folder already exists, can't overwrite with overwrite=False. "
+                        "Try overwrite_soft=True to upload folder contents that don't exist yet")
+
+        for content in glob.glob(os.path.join(local_folder_path, "*")):
+            pass
+
+    def download_files(self, gdrive_files, download_to_path, overwrite: Overwrite=Overwrite.NEVER):
         """Download files from google drive
 
         Params
         gdrive_files (list of pydrive files): files to download (e.g. the output from ls() or
             a list of ouputs from find())
         download_to_path (str): location on local filesystem to download data
+        overwrite (GDriveCommands.Overwrite, default=NEVER): Overwrite mode
         """
         if not os.path.exists(download_to_path):
             os.makedirs(download_to_path)
@@ -244,13 +306,14 @@ class GDriveCommands(object):
         for file in gdrive_files:
             self.download_file(file, download_to_path, overwrite=overwrite)
 
-    def download_folder(self, gdrive_folder, download_to_path, overwrite=False):
+    def download_folder(self, gdrive_folder, download_to_path, overwrite: Overwrite=Overwrite.NEVER):
         """Download files from google drive
 
         Params
         gdrive_files (list of pydrive files): files to download
         download_to_path (str): location on local filesystem to download data
         """
+        download_to_path = os.path.join(download_to_path, gdrive_folder["title"])
         if not os.path.exists(download_to_path):
             os.makedirs(download_to_path)
 

@@ -49,15 +49,15 @@ g.exists(GDRIVE_DIRECTORY, *path_elements)  # -> bool
 
 #### Download Files
 ```python
-g.download_file(GDRIVE_FILE, local_path, overwrite=False)
-g.download_files([GDRIVE_FILE1, GDRIVE_FILE2, ...], local_folder_path, overwrite=False) 
-g.download_folder(GDRIVE_DIRECTORY, local_folder_path, overwrite=False) 
+g.download_file(GDRIVE_FILE, local_path, overwrite=g.Overwrite.NEVER)
+g.download_files([GDRIVE_FILE1, GDRIVE_FILE2, ...], local_folder_path, overwrite=g.Overwrite.NEVER) 
+g.download_folder(GDRIVE_DIRECTORY, local_folder_path, overwrite=g.Overwrite.NEVER) 
 ```
 
 #### Upload Files/Create Folders
 ```python
 g.create_folder(GDRIVE_DIRECTORY, folder_name)  # -> GDRIVE_DIRECTORY
-g.upload_file(local_file_path, GDRIVE_DIRECTORY)
+g.upload_file(local_file_path, GDRIVE_DIRECTORY, overwrite=g.Overwrite.ON_MD5_CHECKSUM_CHANGE)
 ```
 
 ## 3 Uninstall

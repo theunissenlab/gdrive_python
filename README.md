@@ -9,7 +9,7 @@ gdrive-access should work on any version of Python 3 but has only been tested on
 To install the latest
 
 ```bash
-pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.1.0
+pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.0.3
 ```
 
 ### First time credentials setup

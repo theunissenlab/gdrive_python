@@ -1,16 +1,16 @@
-from __future__ import annotations
-
 import enum
 import hashlib
+import logging
 import glob
 import os
 import time
 
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
+from pydrive2.files import GoogleDriveFile
 
 from .display import *
-from .errors import CredentialsNotFound, MultipleFilesError, NotFoundError
+from .errors import CredentialsNotFound, FileExists, FolderExists, MultipleFilesError, NotFoundError
 
 
 def get_auth(settings_file="settings.yaml", webauth=False):
@@ -27,6 +27,24 @@ def _md5(file_):
         return hashlib.md5(f.read()).hexdigest()
 
 
+logger = logging.getLogger()
+logging.basicConfig()
+
+
+class RootDrive(GoogleDriveFile):
+    """A dummy object representing the root directory location"""
+    _dict = {
+        "id": "root",
+        "mimeType": None,
+    }
+
+    def __getitem__(self, key):
+        if key not in self._dict:
+            raise RuntimeError("Can only access {} of the RootDrive dummy object".format(list(self._dict.keys())))
+        else:
+            return self._dict[key]
+
+
 class GDriveCommands(object):
     """
     Access google drive with methods
@@ -36,15 +54,22 @@ class GDriveCommands(object):
     # Initialize the object and authenticate
     g = GDriveCommands()
 
-    # Set the root google drive directory (should be a folder name in the top
-    # level of your google drive)
+    Get root directory (not necessary)
+    ==================================
+    g.ls_root() -> list of GDRIVE_FILES
     root = g.get_root(ROOTDIR) -> GDRIVE_DIRECTORY
 
     Access Files
     ============
+    # These functions can all optionally start with a google drive directory object
+    # (GoogleDriveFile with mimeType=application/vnd.google-apps.folder). They start
+    # from the root otherwise.
     g.find(GDRIVE_DIRECTORY, *path_elements) -> GDRIVE_FILE/GDRIVE_DIRECTORY
+    g.find(*path_elements) -> GDRIVE_FILE/GDRIVE_DIRECTORY
     g.ls(GDRIVE_DIRECTORY, *path_elements) -> list of GDRIVE_FILEs
+    g.ls(*path_elements) -> list of GDRIVE_FILEs
     g.exists(GDRIVE_DIRECTORY, *path_elements) -> bool
+    g.exists(*path_elements) -> bool
 
     Download Files
     ==============
@@ -70,10 +95,26 @@ class GDriveCommands(object):
         ON_FILESIZE_CHANGE = 2
         ON_MD5_CHECKSUM_CHANGE = 3
 
-    def __init__(self, settings_file="settings.yaml"):
+    def __init__(self, settings_file="settings.yaml", log_level=logging.INFO):
         self.drive = GoogleDrive(self._get_auth(settings_file))
 
-    def get_root(self, folder_name, shared=False):
+        self.logger = logging.getLogger("gdrive_access.access.GDriveCommands")
+        self.logger.setLevel(log_level)
+
+    def _split_root_and_path(self, *path):
+        """Split a list of path elements into the root and string path
+
+        Returns a tuple of (root: GoogleDriveFile, path: List[str])
+        """
+        if not len (path) or isinstance(path[0], str):
+            return RootDrive(), path
+
+        if not isinstance(path[0], GoogleDriveFile):
+            raise ValueError("The path must either be all strings or start with a GoogleDriveFile")
+
+        return path[0], path[1:]
+
+    def get_root(self, folder_name: str, shared: bool=False):
         """Get the root directory to start queries from
 
         Params
@@ -94,12 +135,12 @@ class GDriveCommands(object):
             }).GetList())
 
         if len(result_list) > 1:
-            print(result_list)
-            print("Warning: Located {} files by name {}. Selecting the first one".format(
+            logger.warning("Located {} files by name {}. Selecting the first one".format(
                 len(result_list), folder_name
             ))
         elif len(result_list) == 0:
-            raise NotFoundError("{}older '{}' not found.".format("Shared f" if shared else "F", folder_name))
+            raise NotFoundError("{}older '{}' not found. Use ls() or "
+                "ls_root() to see potential top level folders".format("Shared f" if shared else "F", folder_name))
 
         return result_list[0]
 
@@ -115,7 +156,7 @@ class GDriveCommands(object):
                     "'python -m gdrive_access.setup_credentials --dir CREDENTIALDIR'\n"
                     "or fixing the location of the credentials location set in {}".format(settings_file))
 
-    def _to_id(self, file_):
+    def _to_id(self, file_: GoogleDriveFile):
         """Return the id of the object unless it is a shortcut, then find the true id.
         """
         if file_["mimeType"] == "application/vnd.google-apps.shortcut":
@@ -124,7 +165,12 @@ class GDriveCommands(object):
         else:
             return file_["id"]
 
-    def _check_if_overwrite_okay(self, overwrite: Overwrite, gdrive_file, download_to_path):
+    def _check_if_overwrite_okay(
+            self,
+            overwrite: Overwrite,
+            gdrive_file: GoogleDriveFile,
+            download_to_path: str
+            ):
         if overwrite is self.Overwrite.NEVER:
             return False
         elif overwrite is self.Overwrite.ALWAYS:
@@ -138,11 +184,11 @@ class GDriveCommands(object):
             gdrive_checksum = gdrive_file.metadata["md5Checksum"]
             return local_checksum != gdrive_checksum
 
-    def _find_one_level(self, dir, filename):
+    def _find_one_level(self, dir: GoogleDriveFile, filename: str):
         """Look for a filename in google drive directory
 
         Params
-        dir: a str name of the Google Drive directory to find in
+        dir: a GoogleDriveFile representing a folder to locate the file in
         filename: the str name of the file or directory to look for
 
         Returns:
@@ -162,35 +208,35 @@ class GDriveCommands(object):
 
         return file_list[0]
 
-    def find(self, root, *dirnames):
+    def find(self, *path):
         """Look for a specific path in google drive directory
 
         Params
-        root: the root directory to start looking from
-        *dirnames: each individual path element
+        *path: each individual path element. The first one can optionally be a
+            GoogleDriveFile representing a directory to start from
 
         Returns:
             pydrive.GoogleDriveFile object representing the file being searched for
         """
+        root, path = self._split_root_and_path(*path)
         result = root
-        for dirname in dirnames:
-            result = self._find_one_level(result, dirname)
+        for path_element in path:
+            result = self._find_one_level(result, path_element)
         return result
 
-    def ls(self, root, *dirnames):
-        if not len(dirnames):
-            id_ = self._to_id(root)
-        else:
-            id_ = self._to_id(self.find(root, *dirnames))
-
+    def ls(self, *path):
+        id_ = self._to_id(self.find(*path))
         time.sleep(0.01)
         return PyDriveListWrapper(self.drive.ListFile({
             "q": "'{}' in parents and trashed = false".format(id_)
         }).GetList())
 
-    def exists(self, root, *dirnames):
+    def ls_root(self):
+        return self.ls()
+
+    def exists(self, *path):
         try:
-            self.find(root, *dirnames)
+            self.find(*path)
         except NotFoundError:
             return False
         else:
@@ -229,7 +275,7 @@ class GDriveCommands(object):
             if return_if_exists:
                 return self.find(create_in, folder_name)
             else:
-                raise Exception("Folder already exists")
+                raise FolderExists("Folder already exists")
 
         new_folder = self.drive.CreateFile({
             "title": folder_name,
@@ -253,11 +299,18 @@ class GDriveCommands(object):
             (Note that google drive allows for multiple files of the same name, so it wont actually overwrite
             even if it is set)
         """
-        filename = os.path.basename(local_file_path)
+        if uploaded_name is None:
+            filename = os.path.basename(local_file_path)
+        else:
+            filename = uploaded_name
+
+        self.logger.info("Uploading {} to {}".format(local_file_path, upload_to["title"]))
+
         if self.exists(upload_to, filename):
             existing_file = self.find(upload_to, filename)
             if not self._check_if_overwrite_okay(overwrite, existing_file, local_file_path):
-                raise Exception("File already exists on google drive, can't overwrite with overwrite={}".format(overwrite))
+                self.logger.info("{} already exists at {}".format(local_file_path, upload_to["title"]))
+                raise FileExists("File already exists on google drive, can't overwrite with overwrite={}".format(overwrite))
 
         new_file = self.drive.CreateFile({
             "parents": [{"id": self._to_id(upload_to)}],
@@ -266,27 +319,28 @@ class GDriveCommands(object):
         new_file.SetContentFile(local_file_path)
         time.sleep(0.01)
         new_file.Upload()
+        self.logger.info("Uploaded {} to {}".format(local_file_path, upload_to["title"]))
 
-    def upload_folder(self, local_folder_path, upload_to, uploaded_name=None, overwrite: Overwrite=Overwrite.ON_MD5_CHECKSUM_CHANGE, overwrite_soft=False):
+    def upload_folder(self, local_folder_path, upload_to, uploaded_name=None, overwrite_file: Overwrite=Overwrite.ON_MD5_CHECKSUM_CHANGE, overwrite_folder=False):
         """Upload a local folder and its contents to google drive
 
-        Attempts to preserve folder structure. If overwrite_soft is True, will only upload files that
-        do not already exist. If overwrite is False, will only upload files in the top level
-        does not exist.
+        Attempts to preserve folder structure. overwrite_folder False will not attempt to write at a folder that exists
         """
-        # NOT IMPLEMENTED YET BECAUSE WE NEED TO HAVE A FILTER FOR WHAT FILETYPES TO UPLOAD
-        # AND AVOID HIDDEN FILES?
-        raise NotImplementedError
+        if uploaded_name is None:
+            foldername = os.path.basename(local_folder_path)
+        else:
+            foldername = uploaded_name
 
-        filename = os.path.basename(local_folder_path)
-
-        if not overwrite and not overwrite_soft:
-            if self.exists(upload_to, filename):
-                raise Exception("Folder already exists, can't overwrite with overwrite=False. "
-                        "Try overwrite_soft=True to upload folder contents that don't exist yet")
+        gdrive_folder = self.create_folder(upload_to, foldername, return_if_exists=overwrite_folder)
 
         for content in glob.glob(os.path.join(local_folder_path, "*")):
-            pass
+            if os.path.isdir(content):
+                self.upload_folder(content, gdrive_folder)
+            else:
+                try:
+                    self.upload_file(content, gdrive_folder, overwrite=overwrite_file)
+                except FileExists:
+                    pass
 
     def download_files(self, gdrive_files, download_to_path, overwrite: Overwrite=Overwrite.NEVER):
         """Download files from google drive

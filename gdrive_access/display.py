@@ -15,7 +15,7 @@ class PyDriveListWrapper(list):
             return "<folder empty>"
 
         return "\n".join([
-            "{}:\t\t{}".format(i, f) for i, f in enumerate(self)
+            "{}:\t{}".format(i, f) for i, f in enumerate(self)
         ]) + "\n{}".format(type(self))
 
 

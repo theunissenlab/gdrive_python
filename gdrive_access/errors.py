@@ -8,3 +8,11 @@ class MultipleFilesError(Exception):
 
 class NotFoundError(Exception):
     """Item not Found"""
+
+
+class FileExists(Exception):
+    """File already exists"""
+
+
+class FolderExists(Exception):
+    """Folder already exists"""

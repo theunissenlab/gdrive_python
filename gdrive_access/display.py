@@ -6,7 +6,7 @@ from pydrive2.files import GoogleDriveFile
 
 
 def _file_to_string(self):
-    return "{title}\t\t{mimeType}\t{createdDate}\t{modifiedDate}".format(**self)
+    return "{title}\n\t{mimeType}".format(**self)
 
 
 class PyDriveListWrapper(list):
@@ -15,8 +15,14 @@ class PyDriveListWrapper(list):
             return "<folder empty>"
 
         return "\n".join([
-            "{}:\t{}".format(i, f) for i, f in enumerate(self)
+            "{}: {}".format(i, f) for i, f in enumerate(self)
         ]) + "\n{}".format(type(self))
+
+    def __add__(self, other):
+        if not isinstance(other, PyDriveListWrapper):
+            raise TypeError("Cannot add object of type {} to PyDriveListWrapper".format(type(other)))
+
+        return PyDriveListWrapper(super().__add__(other))
 
 
 GoogleDriveFile.__repr__ = _file_to_string

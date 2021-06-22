@@ -35,8 +35,8 @@ class RootDrive(GoogleDriveFile):
     """A dummy object representing the root directory location"""
     _dict = {
         "id": "root",
+        "title": "Root",
         "mimeType": None,
-        "title": "<root>",
     }
 
     def __getitem__(self, key):

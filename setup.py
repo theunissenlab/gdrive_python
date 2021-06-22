@@ -9,6 +9,9 @@ setup(
     author_email="kvnyu@berkeley.edu",
     license="MIT License",
     packages=["gdrive_access"],
+    entry_points={
+        "console_scripts": ["setup_gdrive_credentials = gdrive_access.setup_credentials:run"],
+    },
     install_requires=[
         "PyDrive2==1.7.0",
     ],

@@ -86,7 +86,7 @@ Instructions (based on: https://pythonhosted.org/PyDrive/quickstart.html#authent
     Path(credentials_json_path).touch()
 
 
-if __name__ == "__main__":
+def run():
     import argparse
     from .access import get_auth
 
@@ -104,3 +104,7 @@ if __name__ == "__main__":
     auth = get_auth(settings_path, webauth="web" in settings_dict)
 
     print("\nCongrats you are authenticated!\n")
+
+
+if __name__ == "__main__":
+    run()

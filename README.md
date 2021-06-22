@@ -9,7 +9,7 @@ gdrive-access should work on any version of Python 3 but has only been tested on
 To install the latest
 
 ```bash
-pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.0.3
+pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.1.0
 ```
 
 ### First time credentials setup
@@ -17,7 +17,7 @@ pip install git+https://github.com/theunissenlab/gdrive_python.git@v0.0.3
 Run the following script and follow the instructions carefully. Optionally, specify a CREDENTIALS_DIR where gdrive-access will put credential files (defaults to current working directory). It will create files `settings.yaml` and `credentials.json` in that directory. You will also create a file in it called `client_secrets.json` during the setup process.
 
 ```bash
-python -m gdrive_access.setup_credentials --dir CREDENTIALS_DIR
+setup_gdrive_credentials --dir CREDENTIALS_DIR
 ```
 
 ## 2 Usage
@@ -35,16 +35,29 @@ Alternatively, specify the custom path to [`CREDENTIALS_DIR/settings.yaml`](http
 g = GDriveCommands("settings.yaml")
 ```
 
-#### Set the root google drive directory (should be a folder name in the top level of your google drive)
-```python
-root = g.get_root(ROOTDIR)  # -> GDRIVE_DIRECTORY
-```
-
 #### Access Files
+
+For these methods, if the first argument is not an instance of `pydrive2.files.GoogleDriveFile`, will assume the path is relative to the root directory.
+
+Get a pointer to a specific folder or path.
+
 ```python
 g.find(GDRIVE_DIRECTORY, *path_elements)  # -> GDRIVE_FILE/GDRIVE_DIRECTORY
-g.ls(GDRIVE_DIRECTORY, *path_elements)  # -> list of GDRIVE_FILEs
+g.find(*path_elements)                    # -> GDRIVE_FILE/GDRIVE_DIRECTORY
+```
+
+List the contents of a folder. 
+
+```
+g.ls(GDRIVE_DIRECTORY, *path_elements)      # -> list of GDRIVE_FILEs
+g.ls(*path_elements)                        # -> list of GDRIVE_FILEs
+```
+
+Check if a given path exists
+
+```
 g.exists(GDRIVE_DIRECTORY, *path_elements)  # -> bool
+g.exists(*path_elements)                    # -> bool
 ```
 
 #### Download Files

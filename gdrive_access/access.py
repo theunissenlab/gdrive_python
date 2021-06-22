@@ -47,18 +47,17 @@ class RootDrive(GoogleDriveFile):
 
 
 class GDriveCommands(object):
-    """
-    Access google drive with methods
+    """Access google drive with methods
 
     Setup
     =====
     # Initialize the object and authenticate
     g = GDriveCommands()
 
-    Get root directory (not necessary)
-    ==================================
-    g.ls_root() -> list of GDRIVE_FILES
-    root = g.get_root(ROOTDIR) -> GDRIVE_DIRECTORY
+    List root directory
+    ===================
+    g.ls_root() -> List[pydrive2.files.GoogleDriveFile]
+    g.ls() -> List[pydrive2.files.GoogleDriveFile]
 
     Access Files
     ============
@@ -210,7 +209,7 @@ class GDriveCommands(object):
         return file_list[0]
 
     def find(self, *path):
-        """Look for a specific path in google drive directory
+        """Get for a specific path in google drive directory
 
         Params
         *path: each individual path element. The first one can optionally be a

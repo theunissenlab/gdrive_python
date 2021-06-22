@@ -48,14 +48,14 @@ g.find(*path_elements)                    # -> GDRIVE_FILE/GDRIVE_DIRECTORY
 
 List the contents of a folder. 
 
-```
+```python
 g.ls(GDRIVE_DIRECTORY, *path_elements)      # -> list of GDRIVE_FILEs
 g.ls(*path_elements)                        # -> list of GDRIVE_FILEs
 ```
 
 Check if a given path exists
 
-```
+```python
 g.exists(GDRIVE_DIRECTORY, *path_elements)  # -> bool
 g.exists(*path_elements)                    # -> bool
 ```

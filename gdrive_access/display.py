@@ -6,7 +6,10 @@ from pydrive2.files import GoogleDriveFile
 
 
 def _file_to_string(self):
-    return "{title}\n\t{mimeType}".format(**self)
+    try:
+        return "{title}\n\t{mimeType}".format(**self)
+    except:
+        return super(GoogleDriveFile, self).__repr__()
 
 
 class PyDriveListWrapper(list):

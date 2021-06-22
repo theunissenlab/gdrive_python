@@ -36,6 +36,7 @@ class RootDrive(GoogleDriveFile):
     _dict = {
         "id": "root",
         "mimeType": None,
+        "title": "<root>",
     }
 
     def __getitem__(self, key):

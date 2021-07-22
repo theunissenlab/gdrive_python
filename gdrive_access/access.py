@@ -376,7 +376,7 @@ class GDriveCommands(object):
             if f["mimeType"] == "application/vnd.google-apps.folder":
                 self.download_folder(
                         f,
-                        os.path.join(download_to_path, f["title"]),
+                        download_to_path,
                         overwrite=overwrite)
             else:
                 self.download_file(

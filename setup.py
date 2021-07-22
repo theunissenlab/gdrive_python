@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="gdrive_access",
-    version="0.1.0",
+    version="0.1.1",
     description="Simplified functions for downloading and uploading to Google Drive",
     author="Kevin Yu",
     author_email="kvnyu@berkeley.edu",

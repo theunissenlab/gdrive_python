@@ -195,9 +195,15 @@ class GDriveCommands(object):
             pydrive.GoogleDriveFile object representing the file being searched for
         """
         time.sleep(0.01)
+        query = "title = '{}' and trashed = false".format(filename)
+
+        if isinstance(dir, RootDrive):
+            query += " and (('{}' in parents) or (sharedWithMe = true))".format(self._to_id(dir))
+        else:
+            query += " and '{}' in parents".format(self._to_id(dir))
+
         file_list = PyDriveListWrapper(self.drive.ListFile({
-            "q": "title = '{}' and '{}' in parents and "
-                 "trashed = false".format(filename, self._to_id(dir))
+            "q": query,
         }).GetList())
 
         if not len(file_list):
@@ -225,11 +231,17 @@ class GDriveCommands(object):
         return result
 
     def ls(self, *path):
-        id_ = self._to_id(self.find(*path))
+        dir = self.find(*path)
         time.sleep(0.01)
-        return PyDriveListWrapper(self.drive.ListFile({
-            "q": "'{}' in parents and trashed = false".format(id_)
-        }).GetList())
+        id_ = self._to_id(self.find(*path))
+        if isinstance(dir, RootDrive):
+            return PyDriveListWrapper(self.drive.ListFile({
+                "q": "(('{}' in parents) or (sharedWithMe = true)) and trashed = false".format(id_)
+            }).GetList())
+        else:
+            return PyDriveListWrapper(self.drive.ListFile({
+                "q": "'{}' in parents and trashed = false".format(id_)
+            }).GetList())
 
     def ls_root(self):
         return self.ls()
